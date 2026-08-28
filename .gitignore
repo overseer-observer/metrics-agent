@@ -1,0 +1,5 @@
+.idea
+plans
+dist/
+dev-dist.sh
+CLAUDE.md

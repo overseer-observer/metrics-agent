@@ -1,0 +1,4 @@
+endpoint: https://example.com/api/agent/v1/metrics
+token: 00000000-0000-4000-8000-000000000000
+log_level: info   # debug | info | warn | error | none
+buffer_path: /var/lib/metrics-agent/buffer

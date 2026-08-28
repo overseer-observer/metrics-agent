@@ -1,0 +1,62 @@
+name: release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+  # Needed for provenance attestation.
+  id-token: write
+  attestations: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: vet
+        run: make vet
+
+      - name: test
+        run: make test
+
+      - name: build
+        run: make build VERSION=${{ github.ref_name }}
+
+      - name: scripts
+        run: |
+          sed "s|__REPO__|$GITHUB_REPOSITORY|g" install.sh > dist/install.sh
+          sed "s|__REPO__|$GITHUB_REPOSITORY|g" set-token.sh > dist/set-token.sh
+          cp uninstall.sh dist/uninstall.sh
+          chmod 0755 dist/install.sh dist/set-token.sh dist/uninstall.sh
+
+      - name: checksums
+        run: cd dist && sha256sum metrics-agent-linux-* install.sh set-token.sh uninstall.sh > SHA256SUMS
+
+      - name: provenance
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: |
+            dist/metrics-agent-linux-amd64
+            dist/metrics-agent-linux-arm64
+
+      - name: release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: ${{ github.ref_name }}
+          generate_release_notes: true
+          files: |
+            dist/metrics-agent-linux-amd64
+            dist/metrics-agent-linux-arm64
+            dist/install.sh
+            dist/set-token.sh
+            dist/uninstall.sh
+            dist/SHA256SUMS
